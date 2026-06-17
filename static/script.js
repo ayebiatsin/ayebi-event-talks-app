@@ -285,5 +285,23 @@ function exportToCsv() {
   URL.revokeObjectURL(url);
 }
 
+// ── Theme Management ──────────────────────────────────────────────────────────
+function initTheme() {
+  const isLight = localStorage.getItem('theme') === 'light';
+  if (isLight) {
+    document.documentElement.classList.add('light-mode');
+    document.getElementById('moonIcon').style.display = 'none';
+    document.getElementById('sunIcon').style.display = 'block';
+  }
+}
+
+function toggleTheme() {
+  const isLight = document.documentElement.classList.toggle('light-mode');
+  localStorage.setItem('theme', isLight ? 'light' : 'dark');
+  document.getElementById('moonIcon').style.display = isLight ? 'none' : 'block';
+  document.getElementById('sunIcon').style.display = isLight ? 'block' : 'none';
+}
+
 // ── Boot ──────────────────────────────────────────────────────────────────────
+initTheme();
 document.addEventListener('DOMContentLoaded', loadReleaseNotes);
