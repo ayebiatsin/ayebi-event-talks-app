@@ -159,6 +159,10 @@ function buildCard(entry, idx) {
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
           Docs
         </a>` : ''}
+        <button class="icon-btn btn-copy" title="Copy content" onclick="copyCardContent(event, this)" data-text="${escHtml(plainText)}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
         <button class="icon-btn btn-tweet" title="Share on X" onclick="openTweetModal(event, this)" data-title="${escHtml(entry.title)}" data-link="${escHtml(entry.link)}" data-text="${escHtml(plainText.slice(0, 180))}" data-tags="${escHtml(tags.join(','))}">
           <svg width="12" height="12" viewBox="0 0 1200 1227" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.163 519.284ZM569.165 687.828L521.697 619.934L144.011 79.6944H306.615L611.412 515.685L658.88 583.579L1055.08 1150.3H892.476L569.165 687.828Z" fill="white"/></svg>
           Tweet
@@ -237,6 +241,48 @@ function updateCharCount() {
 function updateTweetLink() {
   const text = tweetTextarea.value.slice(0, 280);
   tweetLink.href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text);
+}
+
+// ── Export & Copy Utilities ───────────────────────────────────────────────────
+
+async function copyCardContent(event, btn) {
+  event.stopPropagation();
+  const text = btn.dataset.text || '';
+  try {
+    await navigator.clipboard.writeText(text);
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+    setTimeout(() => { btn.innerHTML = originalHtml; }, 2000);
+  } catch (err) {
+    console.error('Failed to copy text: ', err);
+  }
+}
+
+function exportToCsv() {
+  if (allEntries.length === 0) return;
+  
+  const headers = ['Date', 'Title', 'Link', 'Tags', 'Content'];
+  const rows = allEntries.map(entry => {
+    const title = entry.title || '';
+    const date = formatDate(entry.updated);
+    const link = entry.link || '';
+    const tags = extractTags(entry.content).join(', ');
+    const content = stripHtml(entry.content).replace(/\s+/g, ' ').trim();
+    
+    return [date, title, link, tags, content].map(val => `"${val.replace(/"/g, '""')}"`).join(',');
+  });
+  
+  const csvContent = [headers.join(','), ...rows].join('\\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'bigquery_release_notes.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
